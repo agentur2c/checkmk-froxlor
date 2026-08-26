@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Pfad zur Froxlor-Installation anpassen
+FROXLOR_PATH="/var/www/froxlor"
+CLI_COMMAND="bin/froxlor-cli froxlor:update --check-only --no-ansi"
+
+if [ ! -d "$FROXLOR_PATH" ]; then
+    echo "3 \"Froxlor Version\" - Fehler: Verzeichnis $FROXLOR_PATH nicht gefunden."
+    exit 0
+fi
+
+# Befehl im richtigen Verzeichnis ausführen
+OUTPUT=$(cd "$FROXLOR_PATH" && php $CLI_COMMAND 2>&1)
+EXIT_CODE=$?
+
+# Falls der Befehl selbst abstürzt (z.B. PHP-Fehler)
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "2 \"Froxlor Version\" - CRITICAL: CLI-Fehler: $OUTPUT"
+    exit 0
+fi
+
+# Status anhand des Inhalts bestimmen und die originale Zeile anhängen
+if echo "$OUTPUT" | grep -qi "newer version available"; then
+    # Ein Update ist verfügbar (WARN) -> Originale Froxlor-Ausgabe anhängen
+    echo "1 \"Froxlor Version\" - WARN - $OUTPUT"
+else
+    # Kein Update verfügbar / System aktuell (OK) -> Originale Froxlor-Ausgabe anhängen
+    echo "0 \"Froxlor Version\" - OK - $OUTPUT"
+fi
+
