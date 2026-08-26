@@ -72,3 +72,5 @@ In der Detailansicht des Services siehst Du daher transparente Systemmeldungen w
 * `Cache generated X minutes ago`
 * `cache interval: 3 hours 0 minutes`
 
+## Lizenz usw.
+Provided as is - use it on your own risk :-)
