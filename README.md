@@ -13,11 +13,11 @@ Dieses Bash-Skript integriert eine automatische Prüfung auf verfügbare Froxlor
 
 ---
 
-## Installation 
+# Installation 
 
-### Automatisch
+## Automatisch
 
-#### Installationscript quick-install.sh
+### Installationscript quick-install.sh
 
 Hinweis: wget muss auf dem System installiert sein
 
@@ -25,17 +25,20 @@ Hinweis: wget muss auf dem System installiert sein
 wget -O - "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/quick-install.sh" | sh
 ```
 
-### Manuell
+Danach mit Schritt 4 der manuellen Installation fortfahren.
 
-#### 1. Verzeichnis auf dem Froxlor-Server anlegen
+
+## Manuell
+
+### 1. Verzeichnis auf dem Froxlor-Server anlegen
 Erstelle das Verzeichnis für das 3-Stunden-Intervall (**10800 Sekunden**) im Local-Ordner des Checkmk-Agenten:
 
 ```bash
 mkdir -p /usr/lib/check_mk_agent/local/10800
 ```
 
-#### 2. Skript herunterladen
-Lade das Skript direkt in das eben erstellte Verzeichnis herunter. Ersetze in den Beispielen `DEIN_RELEASES_ODER_RAW_PFAD` durch die tatsächliche URL zu Deinem Repository (z. B. den Raw-Link Deiner Gitea- oder GitHub-Instanz):
+### 2. Skript herunterladen
+Lade das Skript direkt in das eben erstellte Verzeichnis herunter.
 
 **Über wget:**
 ```bash
@@ -47,14 +50,14 @@ wget -O /usr/lib/check_mk_agent/local/10800/froxlor_version "https://raw.githubu
 curl -o /usr/lib/check_mk_agent/local/10800/froxlor_version "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/froxlor_version"
 ```
 
-#### 3. Ausführungsrechte vergeben
+### 3. Ausführungsrechte vergeben
 Damit der Checkmk-Agent das Skript ausführen kann, müssen die Rechte angepasst werden:
 
 ```bash
 chmod +x /usr/lib/check_mk_agent/local/10800/froxlor_version
 ```
 
-#### 4. In Checkmk einbinden
+### 4. In Checkmk einbinden
 1. Wechsle in die **Checkmk Web-Oberfläche**.
 2. Rufe die **Setup / Service Discovery** (Service-Erkennung) des betroffenen Hosts auf.
 3. Checkmk erkennt den neuen Service `"Froxlor Version"` automatisch.
