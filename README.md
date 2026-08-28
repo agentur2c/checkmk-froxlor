@@ -16,7 +16,7 @@ Dank einer integrierten, intelligenten Cache-Logik läuft die aufwendige CLI-Abf
 
 ---
 
-# Installation
+# Installation / Update
 
 ## Automatisch
 
