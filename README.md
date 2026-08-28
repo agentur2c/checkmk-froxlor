@@ -22,12 +22,18 @@ Dank einer integrierten, intelligenten Cache-Logik läuft die aufwendige CLI-Abf
 
 ### Installationsskript quick-install.sh
 
-Hinweis: `wget` muss auf dem System installiert sein.
+Hinweis: `wget` oder curl muss auf dem System installiert sein.
 
 Alte Versionen des Scripts die unter /usr/lib/check_mk_agent/local/10800/ o.ä. abgelegt sind werden gelöscht
 
 ```bash
 wget -O - "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/quick-install.sh" | sh
+```
+
+oder 
+
+```bash
+curl -s "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/quick-install.sh" | sh
 ```
 
 Danach mit Schritt 4 der manuellen Installation fortfahren.
