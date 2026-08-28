@@ -2,24 +2,29 @@
 
 Dieses Bash-Skript integriert eine automatische Prüfung auf verfügbare Froxlor-Updates in **Checkmk**. Es nutzt das offizielle Froxlor-CLI, fängt die Ausgabe ab und bereitet sie im passenden Format für einen Checkmk **Local Check** auf.
 
+Dank einer integrierten, intelligenten Cache-Logik läuft die aufwendige CLI-Abfrage standardmäßig nur einmal pro Stunde. Liegt jedoch ein Fehler oder ein ausstehendes Update vor, schaltet das Skript sofort in den Minutentakt, damit Checkmk nach dem Einspielen des Updates **innerhalb von 60 Sekunden automatisch wieder auf Grün wechselt**.
+
 ## Getestet mit folgenden Versionen
-* Checkmk Community (formerly Raw) 2.5.0p12
-* Froxlor > 2.3.9
+* Checkmk Community (formerly Raw) >= 2.5.0
+* Froxlor >= 2.3.9
 
 ## Features
-* **Automatische Erkennung:** Prüft, ob ein neues Froxlor-Update bereitsteht.
-* **Sicherheits-Fallbacks:** Meldet `CRITICAL`, wenn der CLI-Befehl fehlschlägt (z. B. bei PHP- oder Datenbankproblemen) oder `UNKNOWN`, falls das Verzeichnis fehlt.
-* **Ressourcenschonend:** Wird asynchron ausgeführt (standardmäßig alle 3 Stunden).
+* **Automatische Erkennung:** Prüft zuverlässig, ob ein neues Froxlor-Update bereitsteht.
+* **Sofortige Fehlererkennung:** Strukturelle Probleme (wie ein gelöschtes oder verschobenes Froxlor-Verzeichnis) hebeln den Cache aus und werden **immer sofort** (innerhalb von 60 Sekunden) als `UNKNOWN` gemeldet.
+* **Intelligentes Caching:** Schont die CPU, indem die PHP-CLI bei einem `OK`-Status nur alle 60 Minuten (`3600` Sekunden) abgefragt wird.
+* **Dynamische Reaktionszeit:** Bei `WARN` (Updates verfügbar) oder `CRITICAL` (CLI-Fehler) wird der Cache ignoriert. Nach einem erfolgreichen Update wird der Status im nächsten Checkmk-Durchlauf sofort wieder grün.
 
 ---
 
-# Installation 
+# Installation
 
 ## Automatisch
 
-### Installationscript quick-install.sh
+### Installationsskript quick-install.sh
 
-Hinweis: wget muss auf dem System installiert sein
+Hinweis: `wget` muss auf dem System installiert sein.
+
+Alte Versionen des Scripts die unter /usr/lib/check_mk_agent/local/10800/ o.ä. abgelegt sind werden gelöscht
 
 ```bash
 wget -O - "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/quick-install.sh" | sh
@@ -30,31 +35,31 @@ Danach mit Schritt 4 der manuellen Installation fortfahren.
 
 ## Manuell
 
-### 1. Verzeichnis auf dem Froxlor-Server anlegen
-Erstelle das Verzeichnis für das 3-Stunden-Intervall (**10800 Sekunden**) im Local-Ordner des Checkmk-Agenten:
+### 1. Skript im Standard-Local-Verzeichnis ablegen
+Da das Skript sein Caching selbst steuert, wird es im normalen `local`-Ordner für minütliche Ausführung abgelegt:
 
 ```bash
-mkdir -p /usr/lib/check_mk_agent/local/10800
+mkdir -p /usr/lib/check_mk_agent/local
 ```
 
 ### 2. Skript herunterladen
-Lade das Skript direkt in das eben erstellte Verzeichnis herunter.
+Lade das Skript direkt in das Verzeichnis herunter.
 
 **Über wget:**
 ```bash
-wget -O /usr/lib/check_mk_agent/local/10800/froxlor_version "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/froxlor_version"
+wget -O /usr/lib/check_mk_agent/local/froxlor_version "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/froxlor_version"
 ```
 
 **Alternativ über curl:**
 ```bash
-curl -o /usr/lib/check_mk_agent/local/10800/froxlor_version "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/froxlor_version"
+curl -o /usr/lib/check_mk_agent/local/froxlor_version "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/froxlor_version"
 ```
 
 ### 3. Ausführungsrechte vergeben
 Damit der Checkmk-Agent das Skript ausführen kann, müssen die Rechte angepasst werden:
 
 ```bash
-chmod +x /usr/lib/check_mk_agent/local/10800/froxlor_version
+chmod +x /usr/lib/check_mk_agent/local/froxlor_version
 ```
 
 ### 4. In Checkmk einbinden
@@ -65,12 +70,12 @@ chmod +x /usr/lib/check_mk_agent/local/10800/froxlor_version
 
 ---
 
-## Funktionsweise & Cache
-Da der Check im Ordner `10800` liegt, führt der Checkmk-Agent das Skript nur **alle 3 Stunden** im Hintergrund aus und cacht das Ergebnis. Bei den minütlichen Abfragen liest Checkmk blitzschnell den Cache aus, um die Serverlast zu minimieren. 
+## Funktionsweise & Cache-Logik
+Das Skript wird vom Checkmk-Agenten jede Minute aufgerufen, arbeitet aber extrem ressourcenschonend über eine eigene Cache-Datei unter `/var/tmp/cmk_froxlor_update.cache`:
 
-In der Detailansicht des Services siehst Du daher transparente Systemmeldungen wie:
-* `Cache generated X minutes ago`
-* `cache interval: 3 hours 0 minutes`
+1. **Struktureller Check:** Zuerst wird geprüft, ob das Froxlor-Verzeichnis existiert. Wenn nicht, bricht das Skript sofort mit `UNKNOWN` ab (kein Cache-Verzug!).
+2. **Im Gut-Fall (OK):** Ist das System aktuell, liest das Skript 60 Minuten lang einfach nur blitzschnell die Cache-Datei aus. Die Froxlor-CLI wird nicht belastet.
+3. **Im Fehler- oder Update-Fall:** Meldet Froxlor ein Update oder stürzt ab, wird dieser Status an Checkmk übergeben. Bei allen folgenden minütlichen Abfragen erzwingt das Skript eine Echtzeit-Prüfung, bis das System wieder `OK` ist.
 
 ## Lizenz usw.
 Provided as is - use it on your own risk :-)

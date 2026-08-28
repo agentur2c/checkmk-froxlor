@@ -1,30 +1,76 @@
 #!/bin/bash
+#
+#    froxlor_version	Checkmk Local Check für Froxlor Update-Status
+#
+#    Version 1.0    2026-08-25 Christoph Mai
+#    Version 1.1    2026-08-28 Christoph Mai
+#
+#----------------------------------------------------------------------------
+
+# Cache-Einstellungen
+CACHE_FILE="/var/tmp/cmk_froxlor_update.cache"
+CACHE_TTL=3600 # 1 Stunde in Sekunden
 
 # Pfad zur Froxlor-Installation anpassen
 FROXLOR_PATH="/var/www/html/froxlor"
 CLI_COMMAND="bin/froxlor-cli froxlor:update --check-only --no-ansi"
 
+#==============================================================================
+# Prüfung ob Froxlor Installation vorhanden
+#==============================================================================
 if [ ! -d "$FROXLOR_PATH" ]; then
     echo "3 \"Froxlor Version\" - Fehler: Verzeichnis $FROXLOR_PATH nicht gefunden."
+    # Optional: Cache löschen, damit nach dem Beheben des Fehlers sofort neu geprüft wird
+    rm -f "$CACHE_FILE"
     exit 0
 fi
 
-# Befehl im richtigen Verzeichnis ausführen
-OUTPUT=$(cd "$FROXLOR_PATH" && php $CLI_COMMAND 2>&1)
-EXIT_CODE=$?
 
-# Falls der Befehl selbst abstürzt (z.B. PHP-Fehler)
-if [ $EXIT_CODE -ne 0 ]; then
-    echo "2 \"Froxlor Version\" - CRITICAL: CLI-Fehler: $OUTPUT"
-    exit 0
-fi
+#==============================================================================
+# Check auf Froxlor Version
+#==============================================================================
+execute_froxlor_check() {
+    # Befehl im richtigen Verzeichnis ausführen
+    OUTPUT=$(cd "$FROXLOR_PATH" && php $CLI_COMMAND 2>&1)
+    EXIT_CODE=$?
 
-# Status anhand des Inhalts bestimmen und die originale Zeile anhängen
-if echo "$OUTPUT" | grep -qi "newer version available"; then
-    # Ein Update ist verfügbar (WARN) -> Originale Froxlor-Ausgabe anhängen
-    echo "1 \"Froxlor Version\" - WARN - $OUTPUT"
+    # Falls der Befehl selbst abstürzt (z.B. PHP-Fehler)
+    if [ $EXIT_CODE -ne 0 ]; then
+        echo "2 \"Froxlor Version\" - CRITICAL: CLI-Fehler: $OUTPUT"
+        return
+    fi
+
+    # Status anhand des Inhalts bestimmen und die originale Zeile ausgeben
+    if echo "$OUTPUT" | grep -qi "newer version available"; then
+        echo "1 \"Froxlor Version\" - WARN - $OUTPUT"
+    else
+        echo "0 \"Froxlor Version\" - OK - $OUTPUT"
+    fi
+}
+
+
+#==============================================================================
+# Cache Prüfung
+#==============================================================================
+
+# Prüfen, ob die Cache-Datei existiert und jünger als 1 Stunde ist
+if [ -f "$CACHE_FILE" ] && [ $(( $(date +%s) - $(stat -c %Y "$CACHE_FILE") )) -lt $CACHE_TTL ]; then
+    
+    # Cache ist zeitlich noch gültig. Jetzt prüfen wir den Inhalt:
+    if grep -q "^0 " "$CACHE_FILE"; then
+        # Der letzte Status war "0" (OK) -> Wir nutzen den Cache und schonen die Ressourcen
+        cat "$CACHE_FILE"
+    else
+        # Der letzte Status war ein Fehler -> Trotz gültiger Zeit ECHT neu prüfen!
+        RESULT=$(execute_froxlor_check)
+        echo "$RESULT" > "$CACHE_FILE"
+        echo "$RESULT"
+    fi
+
 else
-    # Kein Update verfügbar / System aktuell (OK) -> Originale Froxlor-Ausgabe anhängen
-    echo "0 \"Froxlor Version\" - OK - $OUTPUT"
+    # Cache ist abgelaufen oder existiert noch nicht -> Echtprüfung
+    RESULT=$(execute_froxlor_check)
+    echo "$RESULT" > "$CACHE_FILE"
+    echo "$RESULT"
 fi
 
