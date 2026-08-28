@@ -36,7 +36,7 @@ oder
 curl -s "https://raw.githubusercontent.com/agentur2c/checkmk-froxlor/refs/heads/main/quick-install.sh" | sh
 ```
 
-Danach mit Schritt 4 der manuellen Installation fortfahren.
+**Danach mit Schritt 4 der manuellen Installation fortfahren.**
 
 
 ## Manuell
