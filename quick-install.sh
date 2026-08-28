@@ -13,7 +13,7 @@ mkdir -p $INSTPATH
 
 # Prüfen, ob wget oder curl vorhanden ist und Download ausführen
 if command -v wget >/dev/null 2>&1; then
-    wget -O $INSTPATH/$CHKSCRIPT "$CHKSCRIPTURL"
+    wget -q -O $INSTPATH/$CHKSCRIPT "$CHKSCRIPTURL"
 elif command -v curl >/dev/null 2>&1; then
     curl -s -o $INSTPATH/$CHKSCRIPT "$CHKSCRIPTURL"
 else
