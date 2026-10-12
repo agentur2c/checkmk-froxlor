@@ -82,4 +82,4 @@ Das Skript wird vom Checkmk-Agenten jede Minute aufgerufen, arbeitet aber extrem
 3. **Im Fehler- oder Update-Fall:** Meldet Froxlor ein Update oder stürzt ab, wird dieser Status an Checkmk übergeben. Bei allen folgenden minütlichen Abfragen erzwingt das Skript eine Echtzeit-Prüfung, bis das System wieder `OK` ist.
 
 ## Lizenz usw.
-Provided as is - use it on your own risk :-)
+Provided as is - use it on your own risk. :-)
