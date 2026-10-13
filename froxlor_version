@@ -25,7 +25,6 @@ if [ ! -d "$FROXLOR_PATH" ]; then
     exit 0
 fi
 
-
 #==============================================================================
 # Check auf Froxlor Version
 #==============================================================================
@@ -48,14 +47,13 @@ execute_froxlor_check() {
     fi
 }
 
-
 #==============================================================================
 # Cache Prüfung
 #==============================================================================
 
 # Prüfen, ob die Cache-Datei existiert und jünger als 1 Stunde ist
-if [ -f "$CACHE_FILE" ] && [ $(( $(date +%s) - $(stat -c %Y "$CACHE_FILE") )) -lt $CACHE_TTL ]; then
-    
+if [ -f "$CACHE_FILE" ] && [ $(($(date +%s) - $(stat -c %Y "$CACHE_FILE"))) -lt $CACHE_TTL ]; then
+
     # Cache ist zeitlich noch gültig. Jetzt prüfen wir den Inhalt:
     if grep -q "^0 " "$CACHE_FILE"; then
         # Der letzte Status war "0" (OK) -> Wir nutzen den Cache und schonen die Ressourcen
@@ -73,4 +71,3 @@ else
     echo "$RESULT" > "$CACHE_FILE"
     echo "$RESULT"
 fi
-
